@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { useError } from '@/providers/error-provider';
-import { Bug, Zap, AlertTriangle, Database, Clock, Memory } from 'lucide-react';
+import { Bug, Zap, AlertTriangle, Database, Clock, MemoryStick } from 'lucide-react';
 
 export function ErrorTestPanel() {
   const { showError } = useError();
@@ -79,7 +79,7 @@ export function ErrorTestPanel() {
     },
     {
       label: 'Custom Error',
-      icon: Memory,
+      icon: MemoryStick,
       onClick: triggerCustomError,
       color: 'bg-green-500 hover:bg-green-600',
     },
