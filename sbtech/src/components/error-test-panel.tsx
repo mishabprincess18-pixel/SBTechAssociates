@@ -1,10 +1,10 @@
 "use client";
 import React from 'react';
 import { useError } from '@/providers/error-provider';
-import { Bug, Zap, AlertTriangle, Database, Clock, Memory } from 'lucide-react';
+import { Bug, Zap, AlertTriangle, Database, Clock, Cpu } from 'lucide-react';
 
 export function ErrorTestPanel() {
-  const { showError } = useError();
+  const { setError } = useError();
 
   const triggerRuntimeError = () => {
     throw new Error('This is a test runtime error from the frontend');
@@ -14,7 +14,7 @@ export function ErrorTestPanel() {
     try {
       await fetch('/api/test-error?type=async');
     } catch (error) {
-      showError('Async operation failed');
+      setError('Async operation failed');
     }
   };
 
@@ -26,12 +26,12 @@ export function ErrorTestPanel() {
     try {
       await fetch('/api/non-existent-endpoint');
     } catch (error) {
-      showError('Network request failed');
+      setError('Network request failed');
     }
   };
 
   const triggerCustomError = () => {
-    showError('This is a custom error message for testing');
+    setError('This is a custom error message for testing');
   };
 
   const triggerBackendError = async () => {
@@ -39,10 +39,10 @@ export function ErrorTestPanel() {
       const response = await fetch('/api/test-error?type=runtime');
       const data = await response.json();
       if (!data.success) {
-        showError(data.error || 'Backend error occurred');
+        setError(data.error || 'Backend error occurred');
       }
     } catch (error) {
-      showError('Failed to communicate with backend');
+      setError('Failed to communicate with backend');
     }
   };
 
@@ -79,7 +79,7 @@ export function ErrorTestPanel() {
     },
     {
       label: 'Custom Error',
-      icon: Memory,
+      icon: Cpu,
       onClick: triggerCustomError,
       color: 'bg-green-500 hover:bg-green-600',
     },

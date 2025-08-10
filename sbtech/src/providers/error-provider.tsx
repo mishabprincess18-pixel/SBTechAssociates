@@ -51,9 +51,9 @@ interface ErrorProviderProps {
  * Provides error state management to all child components
  * 
  * @param children - Child components to wrap with error context
- * @returns JSX.Element - Provider component with error context
+ * @returns React.JSX.Element - Provider component with error context
  */
-export function ErrorProvider({ children }: ErrorProviderProps): JSX.Element {
+export function ErrorProvider({ children }: ErrorProviderProps): React.JSX.Element {
   // State to store the current error message
   // null means no error, string contains the error message
   const [error, setErrorState] = useState<string | null>(null);
