@@ -11,7 +11,7 @@ const logBackendError = (error: any, request?: NextRequest) => {
     timestamp: Date.now(),
     type: 'backend' as const,
     userAgent: request?.headers.get('user-agent') || '',
-    ip: request?.ip || request?.headers.get('x-forwarded-for') || 'unknown',
+    ip: request?.headers.get('x-forwarded-for') || request?.headers.get('x-real-ip') || 'unknown',
   };
 
   // Log to console in development
@@ -70,7 +70,7 @@ export function withErrorHandler(handler: Function) {
         {
           success: false,
           error: process.env.NODE_ENV === 'development' 
-            ? error.message 
+            ? (error instanceof Error ? error.message : String(error))
             : 'Internal Server Error. Please try again later.',
         },
         { status: 500 }
@@ -80,8 +80,8 @@ export function withErrorHandler(handler: Function) {
 }
 
 // Validation error handler
-export function handleValidationError(error: z.ZodError) {
-  const validationErrors = error.errors.map(err => ({
+export function handleValidationError(error: z.ZodError<any>) {
+  const validationErrors = error.issues.map(err => ({
     field: err.path.join('.'),
     message: err.message,
   }));

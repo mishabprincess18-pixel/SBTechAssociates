@@ -1,208 +1,89 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AlertCircle, X } from 'lucide-react';
 
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+/**
+ * Type definition for the error context value
+ * Contains the current error state and functions to manage it
+ */
 interface ErrorContextType {
-  showError: (message: string) => void;
+  /** Current error message string, null if no error */
+  error: string | null;
+  /** Function to set a new error message */
+  setError: (message: string) => void;
+  /** Function to clear the current error */
   clearError: () => void;
 }
 
+/**
+ * Create the error context with undefined as initial value
+ * This will be provided by the ErrorProvider component
+ */
 const ErrorContext = createContext<ErrorContextType | undefined>(undefined);
 
-export function useError() {
+/**
+ * Custom hook to access the error context
+ * Must be used within an ErrorProvider component
+ * 
+ * @returns ErrorContextType - The error context value
+ * @throws Error if used outside of ErrorProvider
+ */
+export function useError(): ErrorContextType {
   const context = useContext(ErrorContext);
-  if (!context) {
+  
+  if (context === undefined) {
     throw new Error('useError must be used within an ErrorProvider');
   }
+  
   return context;
 }
 
+/**
+ * Props interface for the ErrorProvider component
+ */
 interface ErrorProviderProps {
-  children: React.ReactNode;
+  /** Child components that will have access to the error context */
+  children: ReactNode;
 }
 
-export function ErrorProvider({ children }: ErrorProviderProps) {
-  const [error, setError] = useState<string | null>(null);
+/**
+ * ErrorProvider component that manages error state using React Context
+ * Provides error state management to all child components
+ * 
+ * @param children - Child components to wrap with error context
+ * @returns React.JSX.Element - Provider component with error context
+ */
+export function ErrorProvider({ children }: ErrorProviderProps): React.JSX.Element {
+  // State to store the current error message
+  // null means no error, string contains the error message
+  const [error, setErrorState] = useState<string | null>(null);
 
-  const showError = (message: string) => {
-    setError(message);
-    // Auto-clear after 5 seconds
-    setTimeout(() => setError(null), 5000);
+  /**
+   * Function to set a new error message
+   * @param message - The error message to display
+   */
+  const setError = (message: string): void => {
+    setErrorState(message);
   };
 
-  const clearError = () => setError(null);
-
-  // Collect browser and OS information
-  const getBrowserInfo = () => {
-    const userAgent = navigator.userAgent;
-    let browser = 'Unknown';
-    let os = 'Unknown';
-
-    // Detect browser
-    if (userAgent.includes('Chrome')) browser = 'Chrome';
-    else if (userAgent.includes('Firefox')) browser = 'Firefox';
-    else if (userAgent.includes('Safari')) browser = 'Safari';
-    else if (userAgent.includes('Edge')) browser = 'Edge';
-
-    // Detect OS
-    if (userAgent.includes('Windows')) os = 'Windows';
-    else if (userAgent.includes('Mac')) os = 'macOS';
-    else if (userAgent.includes('Linux')) os = 'Linux';
-    else if (userAgent.includes('Android')) os = 'Android';
-    else if (userAgent.includes('iOS')) os = 'iOS';
-
-    return { browser, os };
+  /**
+   * Function to clear the current error
+   * Sets error state back to null
+   */
+  const clearError = (): void => {
+    setErrorState(null);
   };
 
-  // Send error to backend
-  const sendErrorToBackend = async (errorData: any) => {
-    try {
-      await fetch('/api/error-logs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(errorData),
-      });
-    } catch (err) {
-      // Silently fail to avoid infinite loops
-      console.warn('Failed to send error to backend:', err);
-    }
+  // Create the context value object
+  const contextValue: ErrorContextType = {
+    error,
+    setError,
+    clearError,
   };
-
-  // Global error handler
-  const handleGlobalError = (event: ErrorEvent) => {
-    const { browser, os } = getBrowserInfo();
-    
-    const errorData = {
-      message: event.message,
-      stack: event.error?.stack,
-      url: window.location.href,
-      lineNumber: event.lineno,
-      columnNumber: event.colno,
-      browser,
-      os,
-      timestamp: Date.now(),
-      type: 'error' as const,
-      userAgent: navigator.userAgent,
-    };
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Global Error:', errorData);
-    }
-
-    // Send to backend
-    sendErrorToBackend(errorData);
-
-    // Show user-friendly message
-    showError('Something went wrong. Please try again.');
-  };
-
-  // Unhandled promise rejection handler
-  const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-    const { browser, os } = getBrowserInfo();
-    
-    const errorData = {
-      message: event.reason?.message || 'Unhandled Promise Rejection',
-      stack: event.reason?.stack,
-      url: window.location.href,
-      browser,
-      os,
-      timestamp: Date.now(),
-      type: 'unhandledrejection' as const,
-      userAgent: navigator.userAgent,
-    };
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Unhandled Promise Rejection:', errorData);
-    }
-
-    // Send to backend
-    sendErrorToBackend(errorData);
-
-    // Show user-friendly message
-    showError('Something went wrong. Please try again.');
-  };
-
-  // React error boundary fallback
-  const handleReactError = (error: Error, errorInfo: React.ErrorInfo) => {
-    const { browser, os } = getBrowserInfo();
-    
-    const errorData = {
-      message: error.message,
-      stack: error.stack,
-      url: window.location.href,
-      browser,
-      os,
-      timestamp: Date.now(),
-      type: 'error' as const,
-      userAgent: navigator.userAgent,
-      componentStack: errorInfo.componentStack,
-    };
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('React Error:', errorData);
-    }
-
-    // Send to backend
-    sendErrorToBackend(errorData);
-
-    // Show user-friendly message
-    showError('Something went wrong. Please try again.');
-  };
-
-  useEffect(() => {
-    // Set up global error listeners
-    window.addEventListener('error', handleGlobalError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    // Set up React error boundary
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-      // Call original console.error
-      originalConsoleError.apply(console, args);
-      
-      // Check if it's a React error
-      const errorString = args.join(' ');
-      if (errorString.includes('React') || errorString.includes('Error:')) {
-        const error = new Error(errorString);
-        handleReactError(error, { componentStack: '' });
-      }
-    };
-
-    return () => {
-      window.removeEventListener('error', handleGlobalError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      console.error = originalConsoleError;
-    };
-  }, []);
 
   return (
-    <ErrorContext.Provider value={{ showError, clearError }}>
+    <ErrorContext.Provider value={contextValue}>
       {children}
-      
-      {/* Error Toast */}
-      {error && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg">
-            <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
-              <div className="ml-3 flex-1">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-              <button
-                onClick={clearError}
-                className="ml-4 flex-shrink-0 text-red-400 hover:text-red-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </ErrorContext.Provider>
   );
 }
