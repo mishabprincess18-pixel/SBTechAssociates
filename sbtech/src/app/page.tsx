@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Section } from "@/components/section";
 import { ServiceCard } from "@/components/service-card";
 import { PeopleCard } from "@/components/people-card";
+import { ErrorTestPanel } from "@/components/error-test-panel";
 
 export default function Home() {
   return (
@@ -56,6 +57,8 @@ export default function Home() {
         <p className="mt-2">Let’s secure your innovation with clear, modern legal strategy.</p>
         <div className="mt-6"><Link href="/contact"><Button>Book a Free Consultation</Button></Link></div>
       </Section>
+      
+      <ErrorTestPanel />
     </div>
   );
 }
